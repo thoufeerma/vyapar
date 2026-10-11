@@ -147,28 +147,40 @@ export async function bankBalances(companyId: string): Promise<Map<string, Decim
   return result;
 }
 
+interface RawLowStockItem {
+  id: string;
+  name: string;
+  minStockQty: Prisma.Decimal;
+  onHand: Prisma.Decimal;
+}
+
 /** Items at or below their minimum stock level — the low-stock widget. */
 export async function lowStockItems(companyId: string, limit = 10) {
-  const items = await prisma.item.findMany({
-    where: { companyId, deletedAt: null, type: "PRODUCT", isActive: true },
-    select: { id: true, name: true, minStockQty: true },
-  });
+  const rows = await prisma.$queryRaw<RawLowStockItem[]>`
+    SELECT i.id,
+           i.name,
+           i."minStockQty",
+           COALESCE(SUM(sm."qtyIn" - sm."qtyOut"), 0) AS "onHand"
+      FROM "Item" i
+      LEFT JOIN "StockMovement" sm
+        ON sm."itemId" = i.id
+       AND sm."companyId" = ${companyId}
+     WHERE i."companyId" = ${companyId}
+       AND i."deletedAt" IS NULL
+       AND i."type" = 'PRODUCT'
+       AND i."isActive" = true
+     GROUP BY i.id, i.name, i."minStockQty"
+    HAVING COALESCE(SUM(sm."qtyIn" - sm."qtyOut"), 0) <= i."minStockQty"
+     ORDER BY (COALESCE(SUM(sm."qtyIn" - sm."qtyOut"), 0) - i."minStockQty") ASC
+     LIMIT ${limit}
+  `;
 
-  const levels = await stockLevels(
-    companyId,
-    items.map((i) => i.id),
-  );
-
-  return items
-    .map((item) => ({
-      id: item.id,
-      name: item.name,
-      onHand: levels.get(item.id) ?? new Decimal(0),
-      minQty: d(item.minStockQty.toString()),
-    }))
-    .filter((i) => i.onHand.lessThanOrEqualTo(i.minQty))
-    .sort((a, b) => a.onHand.minus(a.minQty).comparedTo(b.onHand.minus(b.minQty)))
-    .slice(0, limit);
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    onHand: d(r.onHand.toString()),
+    minQty: d(r.minStockQty.toString()),
+  }));
 }
 
 /**

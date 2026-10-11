@@ -9,9 +9,18 @@ import { previousPeriod, PERIOD_LABELS } from "@/lib/filters";
 import { receivablePayable, cashBalance, bankBalances, lowStockItems } from "@/server/services/balances";
 import { transactionTotals, salesByDay, listTransactions } from "@/server/services/transactions";
 import { percentChange, formatCurrency, formatPercent, formatQty } from "@/lib/format/number";
+import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/format/date";
-import { SalesChart } from "./sales-chart";
 import { PeriodPicker } from "./period-picker";
+
+const SalesChart = dynamic(
+  () => import("./sales-chart").then((m) => m.SalesChart),
+  {
+    loading: () => (
+      <div className="h-[280px] w-full animate-pulse rounded-lg bg-[var(--surface-2)]" />
+    ),
+  },
+);
 
 export const metadata: Metadata = { title: "Home" };
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { Role } from "@prisma/client";
@@ -42,7 +43,7 @@ export interface FirmContext extends CompanyContext {
 }
 
 /** The signed-in user, or null. Never redirects. */
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<SessionUser | null> {
   const session = await auth();
   const id = session?.user?.id;
   if (!id) return null;
@@ -58,7 +59,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     // DB unreachable — fail gracefully so middleware can redirect to login.
     return null;
   }
-}
+});
 
 /** The signed-in user, or a redirect to the login page. */
 export async function requireUser(): Promise<SessionUser> {
@@ -117,7 +118,7 @@ export async function listUserCompanies(userId: string) {
  * deliberately no fallback to "their first company" — silently opening a
  * different tenant than the one requested is how data gets mixed up.
  */
-export async function getCompanyContext(): Promise<CompanyContext | null> {
+export const getCompanyContext = cache(async function getCompanyContext(): Promise<CompanyContext | null> {
   const user = await getCurrentUser();
   if (!user) return null;
 
@@ -154,7 +155,7 @@ export async function getCompanyContext(): Promise<CompanyContext | null> {
     isMultiFirm: membership.company.isMultiFirm,
     db: forCompany(membership.company.id),
   };
-}
+});
 
 /** The active company, or a redirect to the picker. */
 export async function requireCompany(): Promise<CompanyContext> {

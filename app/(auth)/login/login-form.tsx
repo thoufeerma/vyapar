@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -12,8 +12,10 @@ import { Field, FormError } from "@/components/forms/form-field";
 import { loginSchema, type LoginInput } from "@/lib/validators/auth";
 import { loginAction } from "@/server/actions/auth";
 
-export function LoginForm({ next }: { next?: string }) {
+export function LoginForm({ next: nextProp }: { next?: string } = {}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = nextProp ?? searchParams.get("next") ?? undefined;
   const [formError, setFormError] = React.useState<string | null>(null);
   const [showPassword, setShowPassword] = React.useState(false);
 

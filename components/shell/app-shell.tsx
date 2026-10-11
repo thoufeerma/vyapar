@@ -1,10 +1,14 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
-import { CommandPalette } from "./command-palette";
 import { SystemBanner, type SystemBannerProps } from "./system-banner";
+
+const CommandPalette = dynamic(() =>
+  import("./command-palette").then((m) => m.CommandPalette),
+);
 import { TooltipProvider } from "@/components/ui/display";
 import type { Permission } from "@/lib/auth/permissions";
 

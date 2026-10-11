@@ -372,6 +372,7 @@ model Transaction {
 
   @@unique([firmId, type, financialYear, number])
   @@index([companyId, deletedAt])
+  @@index([companyId, deletedAt, type, date])
   @@index([companyId, firmId, type, date])
   @@index([companyId, partyId, date])
   @@index([companyId, type, status])
